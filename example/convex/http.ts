@@ -1,10 +1,10 @@
 import { httpRouter } from "convex/server";
 import { streamChat } from "./chat";
 import { httpAction } from "./_generated/server";
-import { auth } from "./auth";
+// import { auth } from "./auth"; // where is this thing?
 
 const http = httpRouter();
-auth.addHttpRoutes(http);
+// auth.addHttpRoutes(http);
 
 http.route({
   path: "/chat-stream",
