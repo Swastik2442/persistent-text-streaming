@@ -38,11 +38,12 @@ export function useStream(
   streamUrl: URL,
   driven: boolean,
   streamId: StreamId | undefined,
-  opts?: {
-    // If provided, this will be passed as the Authorization header.
-    authToken?: string | null;
+  opts: {
+    // Will be passed as the Authorization header.
+    authToken: string;
     // If provided, these will be passed as additional headers.
     headers?: Record<string, string>;
+    args?: Record<string, string>;
   }
 ) {
   const [streamEnded, setStreamEnded] = useState(null as boolean | null);
@@ -62,7 +63,7 @@ export function useStream(
     // Otherwise, we'll try to drive the stream and use the HTTP response.
     return false;
   }, [driven, streamId, streamEnded]);
-  //  console.log("usePersistence", usePersistence);
+
   const persistentBody = useQuery(
     getPersistentBody,
     usePersistence && streamId ? { streamId } : "skip"
@@ -70,7 +71,7 @@ export function useStream(
   const [streamBody, setStreamBody] = useState<string>("");
 
   useEffect(() => {
-    if (driven && streamId && !streamStarted.current) {
+    if (driven && streamId && opts.authToken && !streamStarted.current) {
       // Kick off HTTP action.
       void (async () => {
         const success = await startStreaming(
@@ -80,11 +81,10 @@ export function useStream(
             setStreamBody((prev) => prev + text);
           },
           {
-            ...opts?.headers,
-            ...(opts?.authToken
-              ? { Authorization: `Bearer ${opts.authToken}` }
-              : {}),
-          }
+            ...opts.headers,
+            Authorization: `Bearer ${opts.authToken}`
+          },
+          { ...opts.args }
         );
         setStreamEnded(success);
       })();
@@ -93,7 +93,7 @@ export function useStream(
         streamStarted.current = true;
       };
     }
-  }, [driven, streamId, setStreamEnded, streamStarted]);
+  }, [driven, streamId, opts.authToken, setStreamEnded, streamStarted]);
 
   const body = useMemo<StreamBody>(() => {
     // console.log(
@@ -136,26 +136,28 @@ async function startStreaming(
   url: URL,
   streamId: StreamId,
   onUpdate: (text: string) => void,
-  headers: Record<string, string>
+  headers: Record<string, string>,
+  args: Record<string, string>
 ) {
   const response = await fetch(url, {
     method: "POST",
     body: JSON.stringify({
       streamId: streamId,
+      ...args
     }),
     headers: { "Content-Type": "application/json", ...headers },
   });
   // Adapted from https://developer.mozilla.org/en-US/docs/Web/API/Streams_API/Using_readable_streams
   if (response.status === 205) {
-    console.error("Stream already finished", response);
+    // console.error("Stream already finished", response);
     return false;
   }
   if (!response.ok) {
-    console.error("Failed to reach streaming endpoint", response);
+    // console.error("Failed to reach streaming endpoint", response);
     return false;
   }
   if (!response.body) {
-    console.error("No body in response", response);
+    // console.error("No body in response", response);
     return false;
   }
   const reader = response.body.getReader();
