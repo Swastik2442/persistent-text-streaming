@@ -20,7 +20,6 @@
     "build:cjs": "tsc --project ./commonjs.json && echo {\"type\":\"commonjs\"} > dist/commonjs/package.json",
     "dev": "cd example; npm run dev",
     "typecheck": "tsc --noEmit",
-    "prepare": "npm run build",
     "prepack": "node node10stubs.mjs",
     "postpack": "node node10stubs.mjs --cleanup",
     "alpha": "rm -rf dist && npm run build && npm run test && npm version prerelease --preid alpha && npm publish --tag alpha && git push --tags",
